@@ -1,40 +1,14 @@
-
 require_relative 'exceptions.rb'
-
-class OperationKey
-
-  attr_reader :arg_class
-  attr_reader :oper_code
-
-  def initialize(argument, operation_code)
-    @arg_class = argument
-    @oper_code = operation_code
-  end
-
-  def eql?(other)
-    self.class == other.arg_class && self.arg_class == other.arg_class && self.oper_code == other.oper_code
-  end
-
-end
 
 class Operation
 
-  @number_plus_key
-  @fixnum_plus_key
-
-  @errors
-  @arg1
-  @arg2
-
-  @oper_strategies
-
   def initialize(arg1, arg2, operation_code)
-    @number_plus_key = OperationKey.new(Numeric, '+')
-    @fixnum_plus_key = OperationKey.new(Fixnum, '+')
+    @number_plus_key = make_key(Numeric, '+')
+    @fixnum_plus_key = make_key(Fixnum, '+')
     @errors = []
     @oper_strategies = {
-        @number_plus_key => :sum_numbers,
-        @fixnum_plus_key => :sum_numbers
+        @number_plus_key => method(:sum_numbers),
+        @fixnum_plus_key => method(:sum_numbers)
     }
 
     check_arguments(arg1, arg2)
@@ -84,12 +58,16 @@ class Operation
   end
 
   def select_strategy_for_code(operation_code)
-    @current_oper_key = OperationKey.new(@arg1.class, operation_code)
-    @current_method = @oper_strategies[@current_oper_key]
+    current_oper_key = make_key(@arg1.class, operation_code)
+    @current_method = @oper_strategies[current_oper_key]
 
     if @current_method == nil
       @errors << 'There is no operation for entered arguments'
     end
+  end
+
+  def make_key(argument, operation_code)
+    argument.class.to_s + operation_code
   end
 
   #Operations
