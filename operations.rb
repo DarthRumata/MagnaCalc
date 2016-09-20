@@ -1,14 +1,14 @@
 require_relative 'exceptions.rb'
+require_relative 'converter.rb'
 
 class Operation
 
   def initialize(arg1, arg2, operation_code)
-    @number_plus_key = make_key(Numeric, '+')
-    @fixnum_plus_key = make_key(Fixnum, '+')
     @errors = []
     @oper_strategies = {
-        @number_plus_key => method(:sum_numbers),
-        @fixnum_plus_key => method(:sum_numbers)
+        :'+' => method(:simple_sum),
+        :'concat' => method(:simple_sum),
+        :'+.' => method(:simple_sum)
     }
 
     check_arguments(arg1, arg2)
@@ -16,8 +16,13 @@ class Operation
 
     check_for_errors
 
-    @arg1 = arg1
-    @arg2 = arg2
+    begin
+      @arg1 = Converter.convert!(arg1, operation_code)
+      @arg2 = Converter.convert!(arg2, operation_code)
+    rescue
+      @errors << 'Cannot convert arguments to expected classes'
+    end
+    check_for_errors
 
     select_strategy_for_code(operation_code)
     check_for_errors
@@ -45,9 +50,6 @@ class Operation
     if operation_code == nil
       @errors << 'Operation code is empty!'
     end
-    unless operation_code.instance_of? String
-      @errors << "Operation code #{operation_code.class} isn't String class!"
-    end
   end
 
   def check_for_errors
@@ -58,21 +60,16 @@ class Operation
   end
 
   def select_strategy_for_code(operation_code)
-    current_oper_key = make_key(@arg1.class, operation_code)
-    @current_method = @oper_strategies[current_oper_key]
+    @current_method = @oper_strategies[operation_code.to_sym]
 
     if @current_method == nil
       @errors << 'There is no operation for entered arguments'
     end
   end
 
-  def make_key(argument, operation_code)
-    argument.class.to_s + operation_code
-  end
-
   #Operations
 
-  def sum_numbers()
+  def simple_sum()
     @arg1 + @arg2
   end
 
